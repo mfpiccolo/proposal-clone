@@ -1,34 +1,73 @@
-# template-for-proposals
+# ECMAScript Object.clone / clone
 
-A repository template for ECMAScript proposals.
+## [Status](https://tc39.github.io/process-document/)
 
-## Before creating a proposal
+**Stage**: Pre-0
 
-Please ensure the following:
-  1. You are a member of TC39
-  1. You have read the [process document](https://tc39.github.io/process-document/)
-  1. You have reviewed the [existing proposals](https://github.com/tc39/proposals/)
+**Author**: Mike Piccolo (FullStack Labs, [@mfpiccolo](https://twitter.com/mfpiccolo))
 
-## Create your proposal repo
+**Champions**: -
 
-Follow these steps:
-  1.  Create your own repo, clone this one, and copy its contents into your repo. (Note: Do not fork this repo in GitHub's web interface, as that will later prevent transfer into the TC39 organization)
-  1.  Go to your repo settings “Options” page, under “GitHub Pages”, and set the source to the **master branch** and click Save.
-      1. Ensure "Issues" is checked.
-      1. Also, you probably want to disable "Wiki" and "Projects"
-  1.  Avoid merge conflicts with build process output files by running:
-      ```sh
-      git config --local --add merge.output.driver true
-      git config --local --add merge.output.driver true
-      ```
-  1.  Add a post-rewrite git hook to auto-rebuild the output on every commit:
-      ```sh
-      cp hooks/post-rewrite .git/hooks/post-rewrite
-      chmod +x .git/hooks/post-rewrite
-      ```
+## Introduction
 
-## Maintain your proposal repo
+### Part 1 - Long standing problem in JavaScript
 
-  1. Make your changes to `spec.emu` (ecmarkup uses HTML syntax, but is not HTML, so I strongly suggest not naming it ".html")
-  1. Any commit that makes meaningful changes to the spec, should run `npm run build` and commit the resulting output.
-  1. Whenever you update `ecmarkup`, run `npm run build` and commit any changes that come from that dependency.
+Cloning in JavaScript has been an open question for a long time that has been answered in userland in many different ways.
+
+[How do I correctly clone a javascript object](https://stackoverflow.com/questions/728360/how-do-i-correctly-clone-a-javascript-object)
+
+[What is the most efficient way to deep-clone-an-object-in-javascript](https://stackoverflow.com/questions/122102/what-is-the-most-efficient-way-to-deep-clone-an-object-in-javascript)
+
+These two StackOverflow questions have both been open for over ten years,are amonst the highest viewed questions of all time and are still extreemly active. Folks are still actively trying to figure out this problem.
+
+### Part 2 - Immutable patterns
+
+JavaScript has been moving towards immutable patterns.
+
+[immutable](https://www.npmjs.com/package/immutable) - ~2.5 million weekly downloads
+
+[redux](https://www.npmjs.com/package/redux) - ~3 million weekly downloads
+
+[immer](https://www.npmjs.com/package/immer) - ~2 million weekly downloads
+
+## Object method
+
+```js
+const test = { a: { b: { c: 1 } } }
+
+const copy = Object.clone(test)
+assert(test.a.b.c === copy.a.b.c)
+```
+
+## Immutable updates
+
+Following immer's api, you can update the new object
+
+```js
+const test = { a: { b: { c: 1 } } }
+const copy2 = Object.clone(test, draft => (draft.a.b.c = 2))
+assert(test.a.b.c !== copy2.a.b.c)
+assert(copy2.a.b.c === 2)
+```
+
+Example reducer
+
+```js
+const reducer = (state, action) =>
+  Object.clone(state, draft => {
+    switch (action.type) {
+      case RECEIVE_PRODUCTS:
+        action.products.forEach(product => {
+          draft[product.id] = product
+        })
+      case REMOVE_PRODUCT:
+        delete draft[action.productId]
+    }
+  })
+```
+
+### Related Active Proposals
+
+- [Structured Clone](https://github.com/dslomov/ecmascript-structured-clone)
+- [Const Value Types](https://github.com/rricard/proposal-const-value-types)
+- [Immutable Data Structures](https://github.com/sebmarkbage/ecmascript-immutable-data-structures)
